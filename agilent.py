@@ -76,17 +76,51 @@ def averaging_set(num):
     else:
         print("Invalid averaging count")
     return
+        
+#==============================================================================
+# Sets the voltage per division for the desired channel in either V or mV
+#==============================================================================
+def vertical_range_set(vertDiv,channel,suffix):
     
-    
-def vertical_range_set(vertDiv):
+    if(suffix == 'V' or suffix == 'mV'):
+        oscilloscope.write(":CHANnel"+str(channel)+":SCALe "+str(vertDiv)+"["+str(suffix)+"]")
+    else:
+        print("Incorrect voltage units")
     
     return
     
+#==============================================================================
+# Sets the oscilloscope horizontal range, takes a NR3 float and set this as the time per division
+# in seconds.
+#==============================================================================
 def horizontal_range_set(horizDiv):
     
+    oscilloscope.write(":TIMebase:SCALe "+str(horizDiv))    
+    
     return
     
+
+#==============================================================================
+# Sets the number of points to be returned by waveform_capture()
+#==============================================================================
 def points_set(points):
-    
+
+    oscilloscope.write(":WAVeform:POINts "+str(points))    
+        
     return
+    
+#==============================================================================
+# Set the AC/DC coupling for a desired channel on the oscilloscope
+#==============================================================================
+def channel_coupling_set(channel,coupling):
+
+    if(channel == 1 or channel ==2):
+        if(coupling):
+            oscilloscope.write(":CHANnel"+str(coupling)+":COUPling AC")
+        else:
+            oscilloscope.write(":CHANnel"+str(channel)+":COUPling DC")
+    else:
+        print("Invalid channel\n")
+    return
+    
     
