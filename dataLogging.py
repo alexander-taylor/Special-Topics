@@ -38,15 +38,18 @@ import time
 # need timestamp, scan size, pixels etc, scope settings
 #==============================================================================
 
-class scan:
+class scanData:
     def __init__(self):
         self.scanPath = ''
         self.subPaths = []
 
+
+#==============================================================================
+#   Lets the user select a folder to store the scan data.
+#==============================================================================
     def select_scan_path(self):
         
         root = tk.Tk()    
-        
         path = tk.filedialog.askdirectory()
         
         if(path == ''):
@@ -58,13 +61,21 @@ class scan:
             
         self.scanPath = path
     
-    def create_scan_folder(self):
+#==============================================================================
+#   Sets the main scan folder for the scan object.
+#==============================================================================
+    def set_scan_folder(self):
         
         self.scanPath = select_scan_path()
         
         return
         
+#==============================================================================
+#   Creates the Desired number of subfolders for the scan in the current scan folder.
+#==============================================================================
     def create_subfolders(self,num):
+        
+        print("Creating scan subfolders\n")        
         
         for i in range(1,num+1):
 
