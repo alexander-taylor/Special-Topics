@@ -5,7 +5,10 @@ Created on Fri Jul 29 10:30:10 2016
 @author: alexa_000
 """
 import sys
+import serial
+import atexit
 from zaber.serial import *
+
 
 
 #==============================================================================
@@ -25,49 +28,71 @@ from zaber.serial import *
 
 class zabers:
     
-    def __init__(self):
-        self.port = setup_com_port()
-        self.device1 = Binarydevice(self.port,1)
-        self.device2 = Binarydevice(self.port,2)
-        self.home_command()
-        self.minX = 0
-        self.maxX = 0
-        self.minY = 0
-        self.maxY = 0
+    def __init__(self,xmin,xmax,ymin,ymax):
+        self.comPorts = serial_ports()
+        self.port = self.setup_com_port()        
+        self.device1 = BinaryDevice(self.port,1)
+        self.device2 = BinaryDevice(self.port,2)
+        #self.home_command()
+        self.minX = xmin
+        self.maxX = xmax
+        self.minY = ymin
+        self.maxY = ymax
         self.originX = 0
         self.originY = 0
     
 
 
     def setup_com_port(self):
-        
-        comPort = serial_ports()        
-        self.port = BinarySerial(comPort,9600,20)
+           
+        if not self.comPorts:
+            print("No COM Ports available.\n")
+        else:
+            print("Using COM Port: " + self.comPorts[0] + "\n")
+            serialPort = BinarySerial(self.comPorts[0],9600,20)
+            return serialPort
+        return
      
     
-    def abs_command(axis,data):
+    def abs_command(self,axis,data):
             
         absCommand = BinaryCommand(1,20,int(data))
         if(axis == 'x'): 
-            self.device1.send(absCommand)
+            if(data > maxX or data < minX):
+                print("Data out of bounds on x-axis\n")
+            else:
+                self.device1.send(absCommand)
         elif(axis == 'y'):
-            self.device2.send(absCommand)
+            if(data > maxY or data < minY):
+                print("Data out of bounds on y-axis\n")
+            else:
+                self.device2.send(absCommand)
         else:
             print("invalid axis")
             
         
         
-    def rel_command(axis,data):
+    def rel_command(self,axis,data):
         relCommand = BinaryCommand(1,21,int(data))
+        currentPosCmd = BinaryCommand(1,60)
+        currentX = self.device1.send(currentPosCmd).data
+        currentY = self.device2.send(currentPosCmd).data
+        
         if(axis == 'x'): 
-            self.device1.send(relCommand)
+            if(currentX + data > self.maxX or currentX + data < self.minX):
+                print("Bounds reached on x-axis\n")
+            else:
+                self.device1.send(relCommand)
         elif(axis == 'y'):
-            self.device2.send(relCommand)
+            if(currentY + data > self.maxY or currentY + data < self.minY):
+                print("Bounds reached on y-axis\n")
+            else:
+                self.device2.send(relCommand)
         else:
             print("invalid axis")
 
         
-    def home_command():
+    def home_command(self):
         homeCommand = BinaryCommand(0,1)
         self.device1.send(homeCommand)
         self.device2.send(homeCommand)
@@ -77,7 +102,7 @@ class zabers:
     
         return    
         
-    def set_bound(axis,upper,lower):
+    def set_bound(self,axis,upper,lower):
         
         if(axis == 'x'):
             self.minX = lower
@@ -109,36 +134,44 @@ class zabers:
         self.device1.send(absCommand1)
         self.device2.send(absCommand2)
         self.device3.send(absCommand3)
+        return
  
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.comPorts[0].close()
     
     
 def serial_ports():
-""" Lists serial port names
+    """ Lists serial port names
+    
+        :raises EnvironmentError:
+            On unsupported or unknown platforms
+        :returns:
+            A list of the serial ports available on the system
+    """
+    if sys.platform.startswith('win'):
+        ports = ['COM%s' % (i + 1) for i in range(256)]
+    elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
+        # this excludes your current terminal "/dev/tty"
+        ports = glob.glob('/dev/tty[A-Za-z]*')
+    elif sys.platform.startswith('darwin'):
+        ports = glob.glob('/dev/tty.*')
+    else:
+        raise EnvironmentError('Unsupported platform')
+    
+    result = []
+    for port in ports:
+        try:
+            s = serial.Serial(port)
+            s.close()
+            result.append(port)
+        except (OSError, serial.SerialException):
+            pass
+    return result
+    
 
-    :raises EnvironmentError:
-        On unsupported or unknown platforms
-    :returns:
-        A list of the serial ports available on the system
-"""
-if sys.platform.startswith('win'):
-    ports = ['COM%s' % (i + 1) for i in range(256)]
-elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
-    # this excludes your current terminal "/dev/tty"
-    ports = glob.glob('/dev/tty[A-Za-z]*')
-elif sys.platform.startswith('darwin'):
-    ports = glob.glob('/dev/tty.*')
-else:
-    raise EnvironmentError('Unsupported platform')
+    
+    
 
-result = []
-for port in ports:
-    try:
-        s = serial.Serial(port)
-        s.close()
-        result.append(port)
-    except (OSError, serial.SerialException):
-        pass
-return result
     
 
 
