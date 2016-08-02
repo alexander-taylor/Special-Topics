@@ -8,6 +8,8 @@ Created on Tue Aug  2 15:04:53 2016
 import zabers
 import dataLogging
 import agilent
+import numpy as np
+import matplotlib.pylab as plt
 from time import sleep
 from tqdm import tqdm
 from tqdm import trange
@@ -32,31 +34,51 @@ from tqdm import trange
 
 def scan(xWidth, yHeight, stepSize):
     
-    #set origin
-    #create data grid for display?
-    #get step size per mm for both zabers
     zab = zaber(0,10e6,0,10e6,780000,0)
     zab.set_to_start()
     zab.set_origin()
     
+    scope = setup_oscilloscope() 
+    averaging_set(scope,32)
+    points_set(scope,50000)
+    channel_coupling_set(scope,1,'AC')
+    channel_coupling_set(scope,2,'DC')
+    
+    amplitude_grid = np.zeros([xWidth,yHeight])
     
     stepSizeX = 2015 #Encoder value for X-axis zaber for 1mm step
     stepSizeY = 20997 #Encoder value for Y-axis zaber for 1mm step
     stepSizeEncoderX = stepSize * stepSizeX
     stepSizeEncoderY = stepSize * stepSizeY
     
+    currentScan = scanData()
+    currentScan.select_scan_path()
+    currentScan.create_subfolders(yHeight)
         
     
     #loop over columns first to reduce backlash from zabers, y axis also has smaller microstpe
     #size
     for i in tqdm(range(0,xWidth)):
         for j in range(0,yHeight):
+            #here we grab the p2p voltage for the amplitude picture.
+            #and snapshot the waveform for the acoustic imaging.            
+            p2p = vpp_get(scope,1)
+            
+            amplitude_grid[i][j] = p2p            
+            
+            data = waveform_capture(scope,1)
+            
+            np.save(currentScan.subpath[j] + "/%d/.npy" % i, data)
+            
+            
+            
+            
             
             zab.rel_command('y',stepSizeEncoderY)
         zab.rel_command('x',-1*stepSizeEncoderX)
         zab.abs_command('y',zab.originY)
             
     
-    
+    plt.imshow(amplitude_grid)
     
     return

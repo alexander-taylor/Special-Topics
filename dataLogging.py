@@ -66,7 +66,7 @@ class scanData:
 #==============================================================================
     def set_scan_folder(self):
         
-        self.scanPath = select_scan_path()
+        self.scanPath = self.select_scan_path()
         
         return
         

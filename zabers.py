@@ -15,9 +15,8 @@ class zaber:
         self.comPorts = serial_ports()
         self.port = self.setup_com_port()        
         self.device1 = BinaryDevice(self.port,1)
-        self.device1.move_vel(40000)
+        self.device1.move_vel(40000) #unsure if this is doing anything
         self.device2 = BinaryDevice(self.port,2)
-        #self.home_command()
         self.minX = xmin
         self.maxX = xmax
         self.minY = ymin
@@ -143,6 +142,7 @@ class zaber:
         print("Origin:  X: " + str(self.originX) + " " * 3 + "Y: " + str(self.originY) + "\n")
  
     def __exit__(self, exc_type, exc_value, traceback):
+        #hopefully should release COM port on task kill, doesnt work too well with ipython though
         self.comPorts[0].close()
     
     

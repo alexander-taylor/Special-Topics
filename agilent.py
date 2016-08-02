@@ -6,6 +6,7 @@ Created on Fri Jul 29 10:24:45 2016
 """
 
 import visa
+import numpy as np
 
 #file for interacting with agilent dso2002a oscilloscope
 
@@ -36,14 +37,14 @@ def setup_oscilloscope():
 # Captures a waveform from the specified channel. Will return the data in fp format in a numpy
 # array. Number of points is set with points_set
 #==============================================================================
-def waveform_capture(channel):
+def waveform_capture(oscilloscope,channel):
     if(channel == 1 or channel == 2):
         oscilloscope.write(":WAVeform:SOURce CHAN"+str(channel))
         data = oscilloscope.query(":WAVeform:DATA?")
         oscilloscope.write(":RUN")
     
-        #agilent.write(":WAVeform:SOURce CHANnel1")
-        #convert csv data to usable format
+
+        #convert csv data to usable format, strip header
         splitdata = data[10:].split(",")
         floatData = [float(i) for i in splitdata]
         splitDataArray = np.asarray(floatData)
@@ -56,7 +57,7 @@ def waveform_capture(channel):
 # Gets the peak to peak voltage of the desired channel from the oscilloscope and returns it in NR3
 # format.
 #==============================================================================
-def vpp_get(channel):
+def vpp_get(oscilloscope,channel):
     if(channel == 1 or channel == 2):
         oscilloscope.write(":STOP")
         vpp = oscilloscope.query(":MEASure:VPP? CHANnel"+str(channel))
@@ -69,7 +70,7 @@ def vpp_get(channel):
 #==============================================================================
 # Sets the oscilloscope to averaging mode and set the number of averages.
 #==============================================================================
-def averaging_set(num):
+def averaging_set(oscilloscope,num):
     if(num >= 2 or num < 65536):
         oscilloscope.write(":ACQuire:TYPE AVERage")
         oscilloscope.write(":ACQuire:COUNt "+str(num))
@@ -80,7 +81,7 @@ def averaging_set(num):
 #==============================================================================
 # Sets the voltage per division for the desired channel in either V or mV
 #==============================================================================
-def vertical_range_set(vertDiv,channel,suffix):
+def vertical_range_set(oscilloscope,vertDiv,channel,suffix):
     
     if(suffix == 'V' or suffix == 'mV'):
         oscilloscope.write(":CHANnel"+str(channel)+":SCALe "+str(vertDiv)+"["+str(suffix)+"]")
@@ -93,7 +94,7 @@ def vertical_range_set(vertDiv,channel,suffix):
 # Sets the oscilloscope horizontal range, takes a NR3 float and set this as the time per division
 # in seconds.
 #==============================================================================
-def horizontal_range_set(horizDiv):
+def horizontal_range_set(oscilloscope,horizDiv):
     
     oscilloscope.write(":TIMebase:SCALe "+str(horizDiv))    
     
@@ -103,7 +104,7 @@ def horizontal_range_set(horizDiv):
 #==============================================================================
 # Sets the number of points to be returned by waveform_capture()
 #==============================================================================
-def points_set(points):
+def points_set(oscilloscope,points):
 
     oscilloscope.write(":WAVeform:POINts "+str(points))    
         
@@ -112,7 +113,7 @@ def points_set(points):
 #==============================================================================
 # Set the AC/DC coupling for a desired channel on the oscilloscope
 #==============================================================================
-def channel_coupling_set(channel,coupling):
+def channel_coupling_set(oscilloscope,channel,coupling):
 
     if(channel == 1 or channel ==2):
         if(coupling):
