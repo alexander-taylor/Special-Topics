@@ -9,29 +9,13 @@ import serial
 import atexit
 from zaber.serial import *
 
-
-
-#==============================================================================
-# Required functionality:
-#     -home command
-#     -renumber command
-#     -abs move
-#     -rel move
-#     -set origin
-#     -set limits
-#     -arbitrary scan, i.e. x by y pixels, with defined step size
-#     -perhaps also arbitrary scan with x by y size in mm and generate approx step size.
-#     -need to be able to save step size in both encoder values and um for each zaber device created
-#     -need to be able to specify 2-axis or 3-axis
-#     -should probably do this with classes, need to revise some pyhton
-#==============================================================================
-
-class zabers:
+class zaber:
     
-    def __init__(self,xmin,xmax,ymin,ymax):
+    def __init__(self,xmin,xmax,ymin,ymax,xstart,ystart):
         self.comPorts = serial_ports()
         self.port = self.setup_com_port()        
         self.device1 = BinaryDevice(self.port,1)
+        self.device1.move_vel(40000)
         self.device2 = BinaryDevice(self.port,2)
         #self.home_command()
         self.minX = xmin
@@ -40,6 +24,10 @@ class zabers:
         self.maxY = ymax
         self.originX = 0
         self.originY = 0
+        self.startX = xstart
+        self.startY = ystart
+        
+        self.home_command()
     
 
 
@@ -49,7 +37,7 @@ class zabers:
             print("No COM Ports available.\n")
         else:
             print("Using COM Port: " + self.comPorts[0] + "\n")
-            serialPort = BinarySerial(self.comPorts[0],9600,20)
+            serialPort = BinarySerial(self.comPorts[0],9600,40)
             return serialPort
         return
      
@@ -58,12 +46,12 @@ class zabers:
             
         absCommand = BinaryCommand(1,20,int(data))
         if(axis == 'x'): 
-            if(data > maxX or data < minX):
+            if(data > self.maxX or data < self.minX):
                 print("Data out of bounds on x-axis\n")
             else:
                 self.device1.send(absCommand)
         elif(axis == 'y'):
-            if(data > maxY or data < minY):
+            if(data > self.maxY or data < self.minY):
                 print("Data out of bounds on y-axis\n")
             else:
                 self.device2.send(absCommand)
@@ -113,10 +101,17 @@ class zabers:
         else:
             print("Invalid axis.\n")
  
-    def set_origin():
+    def set_origin(self):
         currentPosCmd = BinaryCommand(1,60)
         self.originX = self.device1.send(currentPosCmd).data
         self.originY = self.device2.send(currentPosCmd).data
+        
+    def set_to_start(self):
+        absCommand1 = BinaryCommand(1,20,int(self.startX))
+        absCommand2 = BinaryCommand(1,20,int(self.startY)) 
+        
+        self.device1.send(absCommand1)
+        self.device2.send(absCommand2)
 
         
     def set_2d_abs(xData,yData):
@@ -135,6 +130,17 @@ class zabers:
         self.device2.send(absCommand2)
         self.device3.send(absCommand3)
         return
+        
+    def debug_info(self):
+        currentPosCmd = BinaryCommand(1,60)
+        currentX = self.device1.send(currentPosCmd).data
+        currentY = self.device2.send(currentPosCmd).data
+        
+        print(self.comPorts[0])
+        print("Current Position:  X: " + str(currentX) + " Y: " + str(currentY) + "\n")
+        print("X-Axis Bounds: " + str(self.minX) + " " * 3 + str(self.maxX) +"\n")
+        print("Y-Axis Bounds: " + str(self.minY) + " " * 3 + str(self. maxY) + "\n")
+        print("Origin:  X: " + str(self.originX) + " " * 3 + "Y: " + str(self.originY) + "\n")
  
     def __exit__(self, exc_type, exc_value, traceback):
         self.comPorts[0].close()
