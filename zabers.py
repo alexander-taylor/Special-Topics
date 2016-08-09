@@ -35,8 +35,9 @@ class zaber:
         if not self.comPorts:
             print("No COM Ports available.\n")
         else:
+            serialPort = BinarySerial('COM4',9600,40)
             print("Using COM Port: " + self.comPorts[0] + "\n")
-            serialPort = BinarySerial(self.comPorts[0],9600,40)
+            
             return serialPort
         return
      
